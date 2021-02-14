@@ -222,4 +222,8 @@
   <xacro:front_wheel suffix="right" axle_offset="-0.31"/>
   <xacro:rear_wheel suffix="left" axle_offset="0.27"/>
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
+
+  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
+  <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />
+  
 </robot>
