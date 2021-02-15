@@ -55,6 +55,9 @@
         <mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
+    <gazebo reference="front_wheel_${suffix}">
+      <material>Gazebo/Black</material>
+    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="rear_wheel" params="suffix axle_offset">
@@ -87,12 +90,15 @@
       <limit lower="-3.14159" upper="3.14159" velocity="50.0" effort="1000.0"/>
       <origin xyz="0 ${axle_offset} 0" rpy="0 0 0"/>
     </joint>
+    <gazebo reference="rear_wheel_${suffix}">
+      <material>Gazebo/Black</material>
+    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="axle" params="prefix length parent *origin">
     <link name="${prefix}_axle">
       <xacro:default_inertia/>
-      <visual name="front_axle_vis">
+      <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <geometry>
           <cylinder radius="${framebar_radius}" length="${length}"/>
@@ -113,12 +119,15 @@
       <parent link="${parent}"/>
       <child link="${prefix}_axle" />
     </joint>
+    <gazebo reference="${prefix}_axle">
+      <material>Gazebo/Red</material>
+    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="frame_bar" params="prefix parent length *origin">
     <link name="${prefix}_frame_bar">
       <xacro:default_inertia/>
-      <visual name="front_frame_bar_vis">
+      <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <geometry>
           <cylinder radius="${framebar_radius}" length="${length}"/>
@@ -139,6 +148,9 @@
       <parent link="${parent}"/>
       <child link="${prefix}_frame_bar" />
     </joint>
+    <gazebo reference="${prefix}_frame_bar">
+      <material>Gazebo/Red</material>
+    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="steering_axle_bar_vis" params="prefix length *origin">
@@ -202,6 +214,10 @@
     <origin xyz="0 0 0.05" rpy="0 0 0"/>
   </joint>
 
+  <gazebo reference="steering_axle">
+    <material>Gazebo/Red</material>
+  </gazebo>
+
   <xacro:frame_bar prefix="front" parent="steering_axle" length="0.49">
     <origin xyz="0.13 0.0 0.11" rpy="0.0 0.0 0.0"/>
   </xacro:frame_bar>
@@ -225,5 +241,5 @@
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
   <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />
-  
+
 </robot>

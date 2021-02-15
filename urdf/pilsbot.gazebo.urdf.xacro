@@ -6,7 +6,7 @@
         <mass value="0.01"/>
         <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
       </inertial>
-      <visual name="camera_visual">
+      <visual name="">
         <geometry>
           <box size="0.001 0.01 0.02"/>
         </geometry>
