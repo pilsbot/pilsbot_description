@@ -158,8 +158,8 @@
   <xacro:axle prefix="front" length="0.62" parent="base_link">
     <origin xyz="0 0 0.125" rpy="0 0 0"/>
   </xacro:axle>
-  <xacro:axle prefix="rear" length="0.5" parent="front_axle">
-    <origin xyz="-0.67 0 0" rpy="0 0 0"/>
+  <xacro:axle prefix="rear" length="0.5" parent="back_frame_bar">
+    <origin xyz="0.13 0.0 -0.15" rpy="0 0 0"/>
   </xacro:axle>
 
   <link name="steering_axle">
