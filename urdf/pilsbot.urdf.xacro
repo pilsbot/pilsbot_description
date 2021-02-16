@@ -42,7 +42,7 @@
       <parent link="front_axle"/>
       <child link="front_wheel_${suffix}"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-3.14159" upper="3.14159" velocity="50.0" effort="1000.0"/>
+      <limit lower="-1e+16" upper="1e+16" velocity="50.0" effort="1000.0"/>
       <origin xyz="0 ${axle_offset} 0" rpy="0 0 0"/>
     </joint>
     <transmission name="front_wheel_${suffix}_trans">
@@ -87,7 +87,7 @@
       <parent link="rear_axle"/>
       <child link="rear_wheel_${suffix}"/>
       <axis xyz="0 1 0"/>
-      <limit lower="-3.14159" upper="3.14159" velocity="50.0" effort="1000.0"/>
+      <limit lower="-1e+16" upper="1e+16" velocity="50.0" effort="1000.0"/>
       <origin xyz="0 ${axle_offset} 0" rpy="0 0 0"/>
     </joint>
     <gazebo reference="rear_wheel_${suffix}">
