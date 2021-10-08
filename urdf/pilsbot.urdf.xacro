@@ -19,7 +19,7 @@
     <link name="front_wheel_${suffix}">
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
-        <mass value="1.0"/>
+        <mass value="4.0"/>
         <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
       </inertial>
       <visual name="">
@@ -97,7 +97,11 @@
 
   <xacro:macro name="axle" params="prefix length parent *origin">
     <link name="${prefix}_axle">
-      <xacro:default_inertia/>
+      <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
+        <mass value="3.0"/>
+        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+      </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <geometry>
@@ -126,7 +130,11 @@
 
   <xacro:macro name="frame_bar" params="prefix parent length *origin">
     <link name="${prefix}_frame_bar">
-      <xacro:default_inertia/>
+      <inertial>
+        <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
+        <mass value="3.0"/>
+        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+      </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <geometry>
@@ -175,7 +183,11 @@
   </xacro:axle>
 
   <link name="steering_axle">
-    <xacro:default_inertia/>
+    <inertial>
+      <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
+      <mass value="10.0"/>
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </inertial>
     <visual name="steering_axle">
       <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0.0"/>
       <geometry>
