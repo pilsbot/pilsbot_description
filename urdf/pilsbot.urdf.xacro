@@ -222,7 +222,7 @@
     <parent link="front_axle"/>
     <child link="steering_axle"/>
     <axis xyz="0 0 1"/>
-    <limit lower="-3.14159" upper="3.14159" velocity="50.0" effort="1000.0"/>
+    <limit lower="-1.58" upper="1.58" velocity="50.0" effort="1000.0"/>
     <origin xyz="0 0 0.05" rpy="0 0 0"/>
   </joint>
 
@@ -252,6 +252,16 @@
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
+  
+  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
+  <xacro:pilsbot_system
+    name="PilsBotSystem"
+    use_fake_hardware="true"
+  />
+  
+  
   <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />
+  
+  
 
 </robot>
