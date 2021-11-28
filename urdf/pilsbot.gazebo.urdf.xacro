@@ -67,7 +67,7 @@
 
     <gazebo>
       <plugin name="gazebo_ros_control" filename="libgazebo_ros2_control.so">
-        <!-- Change config here! TODO: make param -->
+        <!-- Change config here! TODO make param -->
         <parameters>$(find pilsbot_control)/config/acker_diff_controller.yaml</parameters>
       </plugin>
     </gazebo>
