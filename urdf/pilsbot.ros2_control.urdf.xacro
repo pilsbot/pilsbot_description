@@ -27,6 +27,14 @@
         <state_interface name="position"/>
         <state_interface name="velocity"/>
       </joint>
+      <joint name="rear_wheel_left_joint">
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
+      <joint name="rear_wheel_right_joint">
+        <state_interface name="position"/>
+        <state_interface name="velocity"/>
+      </joint>
       <joint name="steering_axle_joint">
         <state_interface name="position"/>
       </joint>
