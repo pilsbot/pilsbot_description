@@ -9,6 +9,11 @@
         </xacro:if>
         <xacro:unless value="${use_fake_hardware}">
           <plugin>pilsbot_driver/PilsbotDriver</plugin>
+          <param name="port" value="/dev/ttyS0"/>
+          <param name="serial_connect_retries" value="30"/>
+          <param name="wheel_radius" value="0.125"/>
+          <param name="max_power" value="100"/>
+          <param name="min_speed" value="40"/>
         </xacro:unless>
       </hardware>
       <joint name="front_wheel_left_joint">
@@ -38,6 +43,12 @@
       <joint name="steering_axle_joint">
         <state_interface name="position"/>
       </joint>
+      <sensor name="hoverboard_api">
+		<state_interface name="voltage"/>
+		<state_interface name="avg_amperage_motor.0"/>
+		<state_interface name="avg_amperage_motor.1"/>
+		<state_interface name="tx_bufferlevel"/>
+      </sensor>
     </ros2_control>
   </xacro:macro>
 </robot>
