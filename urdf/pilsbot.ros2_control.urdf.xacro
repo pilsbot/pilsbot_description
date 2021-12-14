@@ -3,12 +3,14 @@
   <xacro:macro name="pilsbot_system" params="name use_fake_hardware:=^|true">
     <ros2_control name="${name}" type="system">
       <hardware>
-        <!-- TODO: WHAT? -->
         <xacro:if value="${use_fake_hardware}">
           <plugin>gazebo_ros2_control/GazeboSystem</plugin>
         </xacro:if>
         <xacro:unless value="${use_fake_hardware}">
           <plugin>pilsbot_driver/PilsbotDriver</plugin>
+          <!-- FIXME: These parameters are currently ignored. -->
+          <!-- also, especially the ports & retries, they would fit -->
+          <!-- much better into a yaml file -->
           <param name="port" value="/dev/ttyS0"/>
           <param name="serial_connect_retries" value="30"/>
           <param name="wheel_radius" value="0.125"/>
