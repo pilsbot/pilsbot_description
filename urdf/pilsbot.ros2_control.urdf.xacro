@@ -49,6 +49,11 @@
 		<state_interface name="avg_amperage_motor.1"/>
 		<state_interface name="tx_bufferlevel"/>
       </sensor>
+      <sensor name="head_mcu">
+		<state_interface name="steering_angle_raw"/>
+		<state_interface name="endstop_l"/>
+		<state_interface name="endstop_r"/>
+      </sensor>
     </ros2_control>
   </xacro:macro>
 </robot>
