@@ -257,7 +257,7 @@
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
   <xacro:pilsbot_system
     name="PilsBotSystem"
-    use_fake_hardware="true"
+    use_fake_hardware="false"
   />
 
   <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />

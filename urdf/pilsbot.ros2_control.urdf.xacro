@@ -8,14 +8,12 @@
         </xacro:if>
         <xacro:unless value="${use_fake_hardware}">
           <plugin>pilsbot_driver/PilsbotDriver</plugin>
-          <!-- FIXME: These parameters are currently ignored. -->
+          <!-- FIXME These parameters are currently ignored. -->
           <!-- also, especially the ports & retries, they would fit -->
           <!-- much better into a yaml file -->
-          <param name="port" value="/dev/ttyS0"/>
-          <param name="serial_connect_retries" value="30"/>
-          <param name="wheel_radius" value="0.125"/>
-          <param name="max_power" value="100"/>
-          <param name="min_speed" value="40"/>
+          <param name="hoverboard_tty_device">/dev/ttyS0</param>
+          <param name="head_mcu_tty_device">/dev/ttyACM0</param>
+          <param name="wheel_radius">0.125</param>
         </xacro:unless>
       </hardware>
       <joint name="front_wheel_left_joint">
