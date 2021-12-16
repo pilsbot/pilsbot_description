@@ -257,8 +257,7 @@
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
 
 
-  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"
-                 config="$(arg controller_config)"/>
+  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
   <xacro:pilsbot_system name="PilsbotSystem" 
@@ -267,5 +266,5 @@
                         head_mcu_tty_device="$(arg head_mcu_tty_device)"
                         wheel_radius="${wheel_radius}"/>
 
-  <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />
+  <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" config="$(arg controller_config)" />
 </robot>
