@@ -1,5 +1,10 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="pilsbot">
+  <xacro:arg name="controller_config" default="acker_diff_controller"/>
+  <xacro:arg name="use_fake_hardware" default="true"/>
+  <xacro:arg name="hoverboard_tty_device" default="/dev/ttyS0"/>
+  <xacro:arg name="head_mcu_tty_device" default="/dev/ttyACM0"/>
+
   <xacro:property name="frame_length" value="0.94"/>
   <xacro:property name="frame_width" value="0.49"/>
   <xacro:property name="framebar_radius" value="0.01"/>
@@ -252,13 +257,15 @@
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
 
 
-  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
+  <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"
+                 config="$(arg controller_config)"/>
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
-  <xacro:pilsbot_system
-    name="PilsBotSystem"
-    use_fake_hardware="false"
-  />
+  <xacro:pilsbot_system name="PilsbotSystem" 
+                        use_fake_hardware="$(arg use_fake_hardware)" 
+                        hoverboard_tty_device="$(arg hoverboard_tty_device)"
+                        head_mcu_tty_device="$(arg head_mcu_tty_device)"
+                        wheel_radius="${wheel_radius}"/>
 
   <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" />
 </robot>
