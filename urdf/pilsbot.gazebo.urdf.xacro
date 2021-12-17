@@ -67,7 +67,7 @@
 
     <gazebo>
       <plugin name="gazebo_ros_control" filename="libgazebo_ros2_control.so">
-        <parameters>$(find pilsbot_control)/config/${config}.yaml</parameters>
+        <parameters>$(find pilsbot_control)/config/${config}</parameters>
       </plugin>
     </gazebo>
 

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="pilsbot">
-  <xacro:arg name="controller_config" default="acker_diff_controller"/>
+  <xacro:arg name="controller_config" default="acker_diff_controller.yaml"/>
   <xacro:arg name="use_fake_hardware" default="true"/>
   <xacro:arg name="hoverboard_tty_device" default="/dev/ttyS0"/>
   <xacro:arg name="head_mcu_tty_device" default="/dev/ttyACM0"/>
