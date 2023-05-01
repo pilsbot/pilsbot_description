@@ -5,6 +5,17 @@
   <xacro:arg name="hoverboard_tty_device" default="/dev/ttyS0"/>
   <xacro:arg name="head_mcu_tty_device" default="/dev/ttyACM0"/>
 
+    <xacro:arg name="camera_name"   default="oak" />
+    <xacro:arg name="camera_model"  default="OAK-D-LITE" />
+    <xacro:arg name="base_frame"    default="oak-d_frame" />
+    <xacro:arg name="parent_frame"  default="front_frame_bar" />
+    <xacro:arg name="cam_pos_x"     default="0.0" />
+    <xacro:arg name="cam_pos_y"     default="0.0" />
+    <xacro:arg name="cam_pos_z"     default="0.0" />
+    <xacro:arg name="cam_roll"      default="0.0" />
+    <xacro:arg name="cam_pitch"     default="0.0" />
+    <xacro:arg name="cam_yaw"       default="0.0" />
+
   <xacro:property name="frame_length" value="0.94"/>
   <xacro:property name="frame_width" value="0.49"/>
   <xacro:property name="framebar_radius" value="0.01"/>
@@ -255,7 +266,13 @@
   <xacro:front_wheel suffix="right" axle_offset="-0.31"/>
   <xacro:rear_wheel suffix="left" axle_offset="0.27"/>
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
-
+  
+  <xacro:include filename="$(find depthai_bridge)/urdf/include/depthai_macro.urdf.xacro"/>
+  <xacro:depthai_camera camera_name = "$(arg camera_name)" parent = "$(arg parent_frame)" 
+                        camera_model = "$(arg camera_model)" base_frame = "$(arg base_frame)" 
+                        cam_pos_x = "$(arg cam_pos_x)" cam_pos_y = "$(arg cam_pos_y)" 
+                        cam_pos_z = "$(arg cam_pos_z)" cam_roll = "$(arg cam_roll)"
+                        cam_pitch = "$(arg cam_pitch)" cam_yaw = "$(arg cam_yaw)"/>
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.gazebo.urdf.xacro"/>
 
