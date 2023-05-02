@@ -267,7 +267,7 @@
   <xacro:rear_wheel suffix="left" axle_offset="0.27"/>
   <xacro:rear_wheel suffix="right" axle_offset="-0.27"/>
   
-  <xacro:include filename="$(find depthai_bridge)/urdf/include/depthai_macro.urdf.xacro"/>
+  <xacro:include filename="$(find depthai_descriptions)/urdf/include/depthai_macro.urdf.xacro"/>
   <xacro:depthai_camera camera_name = "$(arg camera_name)" parent = "$(arg parent_frame)" 
                         camera_model = "$(arg camera_model)" base_frame = "$(arg base_frame)" 
                         cam_pos_x = "$(arg cam_pos_x)" cam_pos_y = "$(arg cam_pos_y)" 
