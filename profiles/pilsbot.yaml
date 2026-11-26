@@ -1,0 +1,28 @@
+# Robot profile: the facts about one physical Pilsbot (see GLOSSARY.md in the
+# workspace repository). Tuning such as PIDs, speed limits and the controller's
+# soft steering limit stays with the nodes that use it.
+#
+# Read by pilsbot_description.profile (launch files) and by the URDF xacro.
+
+geometry:
+  wheelbase: 0.67      # m, front axle pivot to rear axle centre. TODO: measure on the robot
+  front_track: 0.62    # m, between the front wheels' centres
+  rear_track: 0.54     # m, between the rear wheels' centres
+  wheel_radius: 0.125  # m, all four wheels
+
+steering:
+  limit: 1.58  # rad, mechanical limit on either side
+  # Head MCU potentiometer reading -> steering angle [rad]; positive steers right.
+  calibration:
+    - [50702, -1.56601]
+    - [32358, 0.0]
+    - [14017, 1.56601]
+
+devices:
+  hoverboard: /dev/ttyHoverboard
+  head_mcu: /dev/ttyHeadMCU
+  lighting: /dev/ttyLighting
+  joystick: /dev/input/js0
+
+# Name of the gamepad mapping in pilsbot_driver/config, without .yaml
+joystick_mapping: ps4

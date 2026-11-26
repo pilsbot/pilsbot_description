@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="pilsbot_system" params="name use_fake_hardware:=^|true hoverboard_tty_device head_mcu_tty_device wheel_radius">
+  <xacro:macro name="pilsbot_system" params="name use_fake_hardware:=^|true hoverboard_tty_device head_mcu_tty_device wheel_radius steering_calibration">
     <ros2_control name="${name}" type="system">
       <hardware>
         <xacro:if value="${use_fake_hardware}">
@@ -8,12 +8,12 @@
         </xacro:if>
         <xacro:unless value="${use_fake_hardware}">
           <plugin>pilsbot_driver/PilsbotDriver</plugin>
-          <!-- FIXME These parameters are currently ignored. -->
-          <!-- also, especially the ports & retries, they would fit -->
-          <!-- much better into a yaml file -->
+          <!-- From the robot profile. steering_calibration lists
+               potentiometer:angle pairs. -->
           <param name="hoverboard_tty_device">${hoverboard_tty_device}</param>
           <param name="head_mcu_tty_device">${head_mcu_tty_device}</param>
           <param name="wheel_radius">${wheel_radius}</param>
+          <param name="steering_calibration">${steering_calibration}</param>
         </xacro:unless>
       </hardware>
       <joint name="front_wheel_left_joint">
