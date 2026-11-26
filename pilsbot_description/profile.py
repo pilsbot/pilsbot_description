@@ -37,6 +37,8 @@ class Profile:
     steering_limit: float
     steering_calibration: List[Tuple[int, float]]
     devices: Dict[str, str]
+    joystick_device_id: int
+    joystick_device_name: str
     joystick_mapping: str
 
     def controller_overrides(self) -> Dict[str, float]:
@@ -73,7 +75,7 @@ def load(name_or_path: Union[str, Path]) -> Profile:
             node = node[key]
         if kind is float and isinstance(node, int) and not isinstance(node, bool):
             node = float(node)
-        if not isinstance(node, kind):
+        if not isinstance(node, kind) or (kind is int and isinstance(node, bool)):
             raise ProfileError(f'{path}: {dotted} must be a {kind.__name__}')
         return node
 
@@ -86,6 +88,11 @@ def load(name_or_path: Union[str, Path]) -> Profile:
     if len(points) < 2:
         raise ProfileError(f'{path}: steering.calibration needs at least two points')
 
+    joystick = get('devices.joystick', dict)
+    joystick_name = joystick.get('device_name', '')
+    if not isinstance(joystick_name, str):
+        raise ProfileError(f'{path}: devices.joystick.device_name must be a str')
+
     return Profile(
         path=path,
         wheelbase=get('geometry.wheelbase', float),
@@ -95,6 +102,8 @@ def load(name_or_path: Union[str, Path]) -> Profile:
         steering_limit=get('steering.limit', float),
         steering_calibration=points,
         devices={k: get(f'devices.{k}', str)
-                 for k in ('hoverboard', 'head_mcu', 'lighting', 'joystick')},
+                 for k in ('hoverboard', 'head_mcu', 'lighting')},
+        joystick_device_id=get('devices.joystick.device_id', int),
+        joystick_device_name=joystick_name,
         joystick_mapping=get('joystick_mapping', str),
     )

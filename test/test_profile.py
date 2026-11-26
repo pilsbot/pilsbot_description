@@ -22,9 +22,22 @@ def test_shipped_profile_holds_the_robots_current_values():
         'hoverboard': '/dev/ttyHoverboard',
         'head_mcu': '/dev/ttyHeadMCU',
         'lighting': '/dev/ttyLighting',
-        'joystick': '/dev/input/js0',
     }
     assert p.joystick_mapping == 'ps4'
+
+
+def test_joystick_is_the_first_gamepad_by_default():
+    # Humble's SDL-based joy_node picks a gamepad by index or name, not by device file.
+    p = profile.load('pilsbot')
+    assert (p.joystick_device_id, p.joystick_device_name) == (0, '')
+
+
+def test_joystick_can_be_chosen_by_name(tmp_path):
+    path = tmp_path / 'named.yaml'
+    path.write_text(profile.path_of('pilsbot').read_text().replace(
+        'device_id: 0', 'device_id: 1\n    device_name: Wireless Controller'))
+    p = profile.load(str(path))
+    assert (p.joystick_device_id, p.joystick_device_name) == (1, 'Wireless Controller')
 
 
 def test_controller_gets_its_geometry_from_the_profile():
@@ -64,7 +77,7 @@ def test_calibration_needs_at_least_two_points(tmp_path):
     path.write_text(
         'geometry: {wheelbase: 0.67, front_track: 0.62, rear_track: 0.54, wheel_radius: 0.125}\n'
         'steering: {limit: 1.58, calibration: [[32358, 0.0]]}\n'
-        'devices: {hoverboard: a, head_mcu: b, lighting: c, joystick: d}\n'
+        'devices: {hoverboard: a, head_mcu: b, lighting: c, joystick: {device_id: 0}}\n'
         'joystick_mapping: ps4\n')
     with pytest.raises(profile.ProfileError, match='steering.calibration'):
         profile.load(str(path))

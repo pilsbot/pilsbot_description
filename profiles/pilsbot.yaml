@@ -22,7 +22,10 @@ devices:
   hoverboard: /dev/ttyHoverboard
   head_mcu: /dev/ttyHeadMCU
   lighting: /dev/ttyLighting
-  joystick: /dev/input/js0
+  # Humble's joy_node (SDL) picks the gamepad by index, or by name if given.
+  joystick:
+    device_id: 0
+    # device_name: Wireless Controller   # optional; takes precedence over device_id
 
 # Name of the gamepad mapping in pilsbot_driver/config, without .yaml
 joystick_mapping: ps4
