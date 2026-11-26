@@ -22,6 +22,9 @@
   <xacro:property name="wheel_radius" value="0.125"/>
   <xacro:property name="front_wheel_length" value="0.05"/>
   <xacro:property name="rear_wheel_length" value="0.08"/>
+  <!-- Front axle pivot to rear axle centre. Matches the controller's
+       wheel_base_distance until the wheelbase is measured on the robot. -->
+  <xacro:property name="wheelbase" value="0.67"/>
 
   <xacro:macro name="default_inertia">
     <inertial>
@@ -111,7 +114,7 @@
     </gazebo>
   </xacro:macro>
 
-  <xacro:macro name="axle" params="prefix length parent *origin">
+  <xacro:macro name="axle" params="prefix length">
     <link name="${prefix}_axle">
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
@@ -134,11 +137,6 @@
         </geometry>
       </collision>
     </link>
-    <joint name="${prefix}_axle_joint" type="fixed">
-      <xacro:insert_block name="origin" />
-      <parent link="${parent}"/>
-      <child link="${prefix}_axle" />
-    </joint>
     <gazebo reference="${prefix}_axle">
       <material>Gazebo/Red</material>
     </gazebo>
@@ -189,14 +187,25 @@
     </visual>
   </xacro:macro>
 
+  <!-- Reference point: base_link is the rear axle centre, base_footprint the
+       ground below it (docs/adr/0002 in the workspace repository). The chassis
+       is rigid with the rear axle; the front axle turns at the pivot. -->
+  <link name="base_footprint"/>
   <link name="base_link"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+  </joint>
 
-  <xacro:axle prefix="front" length="0.62" parent="base_link">
-    <origin xyz="0 0 0.125" rpy="0 0 0"/>
-  </xacro:axle>
-  <xacro:axle prefix="rear" length="0.5" parent="back_frame_bar">
-    <origin xyz="0.13 0.0 -0.15" rpy="0 0 0"/>
-  </xacro:axle>
+  <xacro:axle prefix="rear" length="0.5"/>
+  <joint name="rear_axle_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_axle"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:axle prefix="front" length="0.62"/>
 
   <link name="steering_axle">
     <inertial>
@@ -234,12 +243,21 @@
     </collision>
   </link>
 
-  <joint name="steering_axle_joint" type="revolute">
-    <parent link="front_axle"/>
+  <!-- The steering head sits on the chassis above the pivot. -->
+  <joint name="steering_axle_mount_joint" type="fixed">
+    <parent link="base_link"/>
     <child link="steering_axle"/>
-    <axis xyz="0 0 1"/>
+    <origin xyz="${wheelbase} 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <!-- A positive steering angle steers right, so the axis points down. The
+       joint keeps its name and sign, so recorded joint states stay valid. -->
+  <joint name="steering_axle_joint" type="revolute">
+    <parent link="steering_axle"/>
+    <child link="front_axle"/>
+    <axis xyz="0 0 -1"/>
     <limit lower="-1.58" upper="1.58" velocity="50.0" effort="1000.0"/>
-    <origin xyz="0 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0 0 -0.05" rpy="0 0 0"/>
   </joint>
 
   <gazebo reference="steering_axle">
