@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="pilsbot">
   <xacro:arg name="controller_config" default="acker_diff_controller.yaml"/>
-  <xacro:arg name="use_fake_hardware" default="true"/>
+  <!-- Which ros2_control hardware the URDF selects: real (the robot's
+       pilsbot_driver) or gazebo (Gazebo Fortress via gz_ros2_control).
+       Required: xacro:arg needs a default, so it is empty and checked below
+       (ADR 0009: no hardcoded fallback). -->
+  <xacro:arg name="hardware" default=""/>
+  <xacro:property name="hardware" value="$(arg hardware)"/>
+  <xacro:if value="${hardware not in ['real', 'gazebo']}">
+    ${xacro.fatal("pilsbot.urdf.xacro: argument 'hardware' must be 'real' or 'gazebo', got '" + str(hardware) + "'")}
+  </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->
   <xacro:arg name="robot_profile" default="$(find pilsbot_description)/profiles/pilsbot.yaml"/>
@@ -297,7 +305,7 @@
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
   <xacro:pilsbot_system name="PilsbotSystem" 
-                        use_fake_hardware="$(arg use_fake_hardware)" 
+                        hardware="${hardware}" 
                         hoverboard_tty_device="${profile.devices.hoverboard}"
                         head_mcu_tty_device="${profile.devices.head_mcu}"
                         wheel_radius="${wheel_radius}"
