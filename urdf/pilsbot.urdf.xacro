@@ -8,7 +8,7 @@
   <xacro:arg name="hardware" default=""/>
   <xacro:property name="hardware" value="$(arg hardware)"/>
   <xacro:if value="${hardware not in ['real', 'gazebo']}">
-    ${xacro.fatal("pilsbot.urdf.xacro: argument 'hardware' must be 'real' or 'gazebo', got '" + hardware + "'")}
+    ${xacro.fatal("pilsbot.urdf.xacro: argument 'hardware' must be 'real' or 'gazebo', got '" + str(hardware) + "'")}
   </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->

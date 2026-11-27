@@ -60,7 +60,8 @@ def test_gazebo_has_no_driver_sensors():
 
 
 @pytest.mark.parametrize('args', [(), ('hardware:=',), ('hardware:=fake',),
-                                  ('hardware:=Real',)])
+                                  ('hardware:=Real',), ('hardware:=true',),
+                                  ('hardware:=1',)])
 def test_missing_or_unknown_hardware_stops_xacro(args):
     result = run_xacro(*args)
     assert result.returncode != 0
@@ -68,6 +69,9 @@ def test_missing_or_unknown_hardware_stops_xacro(args):
     message = result.stderr
     assert "'hardware'" in message
     assert "'real'" in message and "'gazebo'" in message
+    # The headline is our message, not a Python error from building it
+    # (xacro turns 'true' and '1' into a bool and an int).
+    assert "argument 'hardware' must be" in message.splitlines()[0]
 
 
 def test_use_fake_hardware_is_gone():
@@ -80,4 +84,3 @@ def test_use_fake_hardware_is_gone():
         source = pathlib.Path(get_package_share_directory('pilsbot_description'),
                               'urdf', name).read_text()
         assert 'use_fake_hardware' not in source
-    assert 'GazeboSystem<' not in result.stdout

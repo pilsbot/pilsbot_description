@@ -20,9 +20,9 @@
   <exec_depend>hardware_interface</exec_depend>
   <exec_depend>joint_state_publisher</exec_depend>
   <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
   <!-- The URDF reads the controller config from pilsbot_control. -->
   <exec_depend>pilsbot_control</exec_depend>
-  <exec_depend>launch_ros</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>ros2_control</exec_depend>
   <exec_depend>ros2_controllers</exec_depend>
