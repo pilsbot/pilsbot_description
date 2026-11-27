@@ -1,121 +1,122 @@
 <?xml version="1.0"?>
+<!-- Gazebo Fortress (gz sim 6) only. pilsbot.urdf.xacro uses this with
+     hardware:=gazebo; the real URDF has no <gazebo> element.
+
+     gz topics of the sensors (bridged to ROS by pilsbot_simulation's
+     ros_gz_bridge config; the gz names are relative, gz makes them absolute):
+       camera/color/image_raw       Image rgb8 1280x720   -> /camera/color/image_raw
+       camera/color/camera_info     CameraInfo            -> /camera/color/camera_info
+       camera/left/image_rect       Image mono8 640x400   -> /camera/left/image_rect
+       camera/left/camera_info      CameraInfo            -> /camera/left/camera_info
+       camera/right/image_rect      Image mono8 640x400   -> /camera/right/image_rect
+       camera/right/camera_info     CameraInfo            -> /camera/right/camera_info
+       camera/stereo/depth          Image 32FC1 640x400   -> /camera/stereo/depth
+       camera/stereo/camera_info    CameraInfo            -> /camera/stereo/camera_info
+       camera/stereo/depth/points   PointCloudPacked      -> /camera/stereo/points (sim only)
+       front_camera/image_raw       Image rgb8 848x480    -> /image_raw
+       front_camera/camera_info     CameraInfo            -> /camera_info
+     The OAK names are the Humble pilsbot_depthai mjpeg_node's. The robot
+     publishes the decoded colour image only with enable_raw_decode:=true,
+     the mono images only as image_rect/compressed, and depth as 16UC1 in mm
+     (the sim: 32FC1 in m). The CSI camera (jetson_camera) resolved to
+     /image_raw and /camera_info under Foxy; recheck when it moves to Humble.
+     The gz topic carries a front_camera/ prefix because gz derives the
+     camera_info topic from the image topic's parent. -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="pilsbot_gazebo" params="prefix parent config">
-    <link name="${prefix}_camera_link">
-      <inertial>
-        <mass value="0.01"/>
-        <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
-      </inertial>
-      <visual name="">
-        <geometry>
-          <box size="0.001 0.01 0.02"/>
-        </geometry>
-        <material name="">
-          <color rgba="0.0 1.0 0.0 1.0"/>
-        </material>
-      </visual>
-      <collision>
-        <geometry>
-          <box size="0.001 0.01 0.02"/>
-        </geometry>
-      </collision>
-    </link>
 
-    <joint name="${prefix}_camera_joint" type="fixed">
-      <parent link="${parent}"/>
-      <child link="${prefix}_camera_link"/>
-      <origin xyz="0.01 0.0 0.0" rpy="0.0 0.0 0.0"/>
-    </joint>
-
-    <gazebo reference="${prefix}_camera_link">
-      <sensor type="camera" name="${prefix}_camera">
-        <always_on>true</always_on>
-        <update_rate>30</update_rate>
-        <camera name="${prefix}_camera">
-          <horizontal_fov>1.16937</horizontal_fov>
-          <image>
-            <width>848</width>
-            <height>480</height>
-          </image>
-          <!-- Parameters taken from the real sensor. -->
-          <distortion>
-            <k1>0.138183</k1>
-            <k2>0.637974</k2>
-            <k3>0.010038</k3>
-            <p1>-0.006956</p1>
-            <p2>0.0</p2>
-            <center>0.5 0.5</center>
-          </distortion>
-        </camera>
-        <plugin name="plugin_name" filename="libgazebo_ros_camera.so">
-          <!-- Change namespace, camera name and topics so
-              * Images are published to /custom_ns/custom_camera/custom_image
-              * Camera info is published to /custom_ns/custom_camera/custom_info 
-          -->
-          <ros>
-            <namespace></namespace>
-          </ros>
-          <camera_name>${prefix}_camera</camera_name>
-          <frame_name>${prefix}_camera_link</frame_name>
-          <hack_baseline>0.07</hack_baseline>
-        </plugin>
-      </sensor>
-      <material>Gazebo/Green</material>
+  <!-- Wheel-ground friction. The spike (pilsbot/pilsbot_simulation#1)
+       tracked the passive steering with mu 1 and no pivot damping or
+       friction, so the steering joint has no <dynamics>. -->
+  <xacro:macro name="pilsbot_wheel_surface" params="link">
+    <gazebo reference="${link}">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
     </gazebo>
+  </xacro:macro>
 
-  <gazebo reference="oak_left_camera_frame">
-      <sensor type="camera" name="left">
+  <!-- A camera sensor on a link (x forward). The image header names
+       frame_id; gz publishes camera_info next to the image topic. The
+       children of camera_extra go into <camera> (e.g. <distortion>). -->
+  <xacro:macro name="pilsbot_camera" params="name link frame_id topic type:=camera hfov width height format rate near:=0.2 far:=20.0 **camera_extra">
+    <gazebo reference="${link}">
+      <sensor name="${name}" type="${type}">
         <always_on>true</always_on>
-        <update_rate>30</update_rate>
-        <camera name="left">
-          <horizontal_fov>1.2741</horizontal_fov>
+        <update_rate>${rate}</update_rate>
+        <topic>${topic}</topic>
+        <ignition_frame_id>${frame_id}</ignition_frame_id>
+        <camera>
+          <horizontal_fov>${hfov}</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
-            <format>L8</format> 
+            <width>${width}</width>
+            <height>${height}</height>
+            <format>${format}</format>
           </image>
+          <clip>
+            <near>${near}</near>
+            <far>${far}</far>
+          </clip>
+          <xacro:insert_block name="camera_extra"/>
         </camera>
-        <plugin name="plugin_name" filename="libgazebo_ros_camera.so">
-          <ros>
-            <namespace>oak_d</namespace>
-          </ros>
-          <camera_name>left</camera_name>
-          <frame_name>oak_left_camera_optical_frame</frame_name>
-          <hack_baseline>0.075</hack_baseline>
-        </plugin>
       </sensor>
-      <material>Gazebo/Black</material>
     </gazebo>
+  </xacro:macro>
 
-    <gazebo reference="oak_right_camera_frame">
-      <sensor type="camera" name="right">
-        <always_on>true</always_on>
-        <update_rate>30</update_rate>
-        <camera name="right">
-          <horizontal_fov>1.2741</horizontal_fov>
-          <image>
-            <width>640</width>
-            <height>480</height>
-            <format>L8</format> 
-          </image>
-        </camera>
-        <plugin name="plugin_name" filename="libgazebo_ros_camera.so">
-          <ros>
-            <namespace>oak_d</namespace>
-          </ros>
-          <camera_name>right</camera_name>
-          <frame_name>oak_right_camera_optical_frame</frame_name>
-          <hack_baseline>0.075</hack_baseline>
-        </plugin>
-      </sensor>
-      <material>Gazebo/Black</material>
-    </gazebo>
-    
+  <!-- config: file name in pilsbot_control/config. overrides: params file
+       with the robot profile's controller geometry and use_sim_time, written
+       by the launch. gz_ros2_control loads both, in this order. -->
+  <xacro:macro name="pilsbot_gazebo" params="config overrides">
     <gazebo>
-      <plugin name="gazebo_ros_control" filename="libgazebo_ros2_control.so">
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
         <parameters>$(find pilsbot_control)/config/${config}</parameters>
+        <parameters>${overrides}</parameters>
       </plugin>
     </gazebo>
 
+    <xacro:pilsbot_wheel_surface link="front_wheel_left"/>
+    <xacro:pilsbot_wheel_surface link="front_wheel_right"/>
+    <xacro:pilsbot_wheel_surface link="rear_wheel_left"/>
+    <xacro:pilsbot_wheel_surface link="rear_wheel_right"/>
+
+    <!-- OAK-D Lite at the mjpeg_node defaults: colour 1080p ISP-scaled 2/3
+         at 30 fps (HFOV 69 deg), mono 400p at 15 fps (HFOV 73 deg), stereo
+         depth aligned to the left mono camera. -->
+    <xacro:pilsbot_camera name="oak_rgb" link="oak_rgb_camera_frame"
+                          frame_id="oak_rgb_camera_optical_frame" topic="camera/color/image_raw"
+                          hfov="1.20" width="1280" height="720" format="R8G8B8" rate="30">
+      <camera_extra/>
+    </xacro:pilsbot_camera>
+    <xacro:pilsbot_camera name="oak_left" link="oak_left_camera_frame"
+                          frame_id="oak_left_camera_optical_frame" topic="camera/left/image_rect"
+                          hfov="1.27" width="640" height="400" format="L8" rate="15">
+      <camera_extra/>
+    </xacro:pilsbot_camera>
+    <xacro:pilsbot_camera name="oak_right" link="oak_right_camera_frame"
+                          frame_id="oak_right_camera_optical_frame" topic="camera/right/image_rect"
+                          hfov="1.27" width="640" height="400" format="L8" rate="15">
+      <camera_extra/>
+    </xacro:pilsbot_camera>
+    <xacro:pilsbot_camera name="oak_depth" link="oak_left_camera_frame" type="depth_camera"
+                          frame_id="oak_left_camera_optical_frame" topic="camera/stereo/depth"
+                          hfov="1.27" width="640" height="400" format="R_FLOAT32" rate="15">
+      <camera_extra/>
+    </xacro:pilsbot_camera>
+
+    <!-- CSI camera on the front frame bar. -->
+    <xacro:pilsbot_camera name="front_camera" link="front_camera_link"
+                          frame_id="front_camera_link" topic="front_camera/image_raw"
+                          hfov="1.16937" width="848" height="480" format="R8G8B8" rate="30"
+                          near="0.05" far="50.0">
+      <camera_extra>
+        <!-- Measured on the real sensor. -->
+        <distortion>
+          <k1>0.138183</k1>
+          <k2>0.637974</k2>
+          <k3>0.010038</k3>
+          <p1>-0.006956</p1>
+          <p2>0.0</p2>
+          <center>0.5 0.5</center>
+        </distortion>
+      </camera_extra>
+    </xacro:pilsbot_camera>
   </xacro:macro>
 </robot>
