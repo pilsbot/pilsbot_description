@@ -1,0 +1,49 @@
+  <ros2_control name="PilsbotSystem" type="system">
+    <hardware>
+      <plugin>pilsbot_driver/PilsbotDriver</plugin>
+      <!-- From the robot profile. steering_calibration lists
+               potentiometer:angle pairs. -->
+      <param name="hoverboard_tty_device">/dev/ttyHoverboard</param>
+      <param name="head_mcu_tty_device">/dev/ttyHeadMCU</param>
+      <param name="wheel_radius">0.125</param>
+      <param name="steering_calibration">50702:-1.56601,32358:0.0,14017:1.56601</param>
+    </hardware>
+    <joint name="front_wheel_left_joint">
+      <command_interface name="velocity">
+        <param name="min">-1</param>
+        <param name="max">1</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="front_wheel_right_joint">
+      <command_interface name="velocity">
+        <param name="min">-1</param>
+        <param name="max">1</param>
+      </command_interface>
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_wheel_left_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="rear_wheel_right_joint">
+      <state_interface name="position"/>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="steering_axle_joint">
+      <state_interface name="position"/>
+    </joint>
+    <sensor name="hoverboard_api">
+      <state_interface name="voltage"/>
+      <state_interface name="avg_amperage_motor.0"/>
+      <state_interface name="avg_amperage_motor.1"/>
+      <state_interface name="tx_bufferlevel"/>
+    </sensor>
+    <sensor name="head_mcu">
+      <state_interface name="steering_angle_raw"/>
+      <state_interface name="endstop_l"/>
+      <state_interface name="endstop_r"/>
+    </sensor>
+  </ros2_control>
