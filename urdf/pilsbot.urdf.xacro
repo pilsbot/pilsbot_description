@@ -10,6 +10,14 @@
   <xacro:if value="${hardware not in ['real', 'gazebo']}">
     ${xacro.fatal("pilsbot.urdf.xacro: argument 'hardware' must be 'real' or 'gazebo', got '" + str(hardware) + "'")}
   </xacro:if>
+  <!-- gazebo only, required there: params file with the robot profile's
+       controller geometry and use_sim_time, written by the launch.
+       gz_ros2_control loads it after controller_config. -->
+  <xacro:arg name="controller_overrides" default=""/>
+  <xacro:property name="controller_overrides" value="$(arg controller_overrides)"/>
+  <xacro:if value="${hardware == 'gazebo' and not str(controller_overrides)}">
+    ${xacro.fatal("pilsbot.urdf.xacro: argument 'controller_overrides' must name the controller overrides params file with hardware:=gazebo")}
+  </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->
   <xacro:arg name="robot_profile" default="$(find pilsbot_description)/profiles/pilsbot.yaml"/>
@@ -43,12 +51,20 @@
     </inertial>
   </xacro:macro>
 
+  <!-- Solid cylinder; the inertial frame's z is the cylinder axis, which
+       the wheels' inertial rpy turns onto the axle. -->
+  <xacro:macro name="wheel_inertia" params="mass length">
+    <inertia ixx="${mass * (3 * wheel_radius**2 + length**2) / 12}" ixy="0.0" ixz="0.0"
+             iyy="${mass * (3 * wheel_radius**2 + length**2) / 12}" iyz="0.0"
+             izz="${mass * wheel_radius**2 / 2}"/>
+  </xacro:macro>
+
   <xacro:macro name="front_wheel" params="suffix axle_offset">
     <link name="front_wheel_${suffix}">
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <mass value="4.0"/>
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+        <xacro:wheel_inertia mass="4.0" length="${front_wheel_length}"/>
       </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
@@ -83,9 +99,6 @@
         <mechanicalReduction>1</mechanicalReduction>
       </actuator>
     </transmission>
-    <gazebo reference="front_wheel_${suffix}">
-      <material>Gazebo/Black</material>
-    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="rear_wheel" params="suffix axle_offset">
@@ -93,7 +106,7 @@
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <mass value="1.0"/>
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+        <xacro:wheel_inertia mass="1.0" length="${rear_wheel_length}"/>
       </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
@@ -118,9 +131,6 @@
       <limit lower="-1e+16" upper="1e+16" velocity="50.0" effort="1000.0"/>
       <origin xyz="0 ${axle_offset} 0" rpy="0 0 0"/>
     </joint>
-    <gazebo reference="rear_wheel_${suffix}">
-      <material>Gazebo/Black</material>
-    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="axle" params="prefix length">
@@ -146,9 +156,6 @@
         </geometry>
       </collision>
     </link>
-    <gazebo reference="${prefix}_axle">
-      <material>Gazebo/Red</material>
-    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="frame_bar" params="prefix parent length *origin">
@@ -179,9 +186,6 @@
       <parent link="${parent}"/>
       <child link="${prefix}_frame_bar" />
     </joint>
-    <gazebo reference="${prefix}_frame_bar">
-      <material>Gazebo/Red</material>
-    </gazebo>
   </xacro:macro>
 
   <xacro:macro name="steering_axle_bar_vis" params="prefix length *origin">
@@ -269,9 +273,6 @@
     <origin xyz="0 0 -0.05" rpy="0 0 0"/>
   </joint>
 
-  <gazebo reference="steering_axle">
-    <material>Gazebo/Red</material>
-  </gazebo>
 
   <xacro:frame_bar prefix="front" parent="steering_axle" length="0.49">
     <origin xyz="0.13 0.0 0.11" rpy="0.0 0.0 0.0"/>
@@ -288,6 +289,32 @@
   <xacro:frame_bar prefix="back" parent="front_frame_bar" length="0.49">
     <origin xyz="-0.94 0.0 0.0" rpy="0.0 0.0 0.0"/>
   </xacro:frame_bar>
+
+  <!-- CSI camera (jetson_camera) on the front frame bar. -->
+  <link name="front_camera_link">
+    <inertial>
+      <mass value="0.01"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+    <visual name="">
+      <geometry>
+        <box size="0.001 0.01 0.02"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.0 1.0 0.0 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.001 0.01 0.02"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="front_camera_joint" type="fixed">
+    <parent link="front_frame_bar"/>
+    <child link="front_camera_link"/>
+    <origin xyz="0.01 0.0 0.0" rpy="0.0 0.0 0.0"/>
+  </joint>
 
   <xacro:front_wheel suffix="left" axle_offset="${profile.geometry.front_track / 2}"/>
   <xacro:front_wheel suffix="right" axle_offset="${-profile.geometry.front_track / 2}"/>
@@ -311,5 +338,7 @@
                         wheel_radius="${wheel_radius}"
                         steering_calibration="${','.join(['%d:%s' % (p[0], p[1]) for p in profile.steering.calibration])}"/>
 
-  <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" config="$(arg controller_config)" />
+  <xacro:if value="${hardware == 'gazebo'}">
+    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"/>
+  </xacro:if>
 </robot>

@@ -16,6 +16,8 @@ from ament_index_python.packages import get_package_share_directory
 import pytest
 
 GOLDEN = pathlib.Path(__file__).parent / 'golden'
+# gazebo also needs the controller overrides file (test_gazebo_block.py).
+GAZEBO = ('hardware:=gazebo', 'controller_overrides:=/tmp/pilsbot_profile_test.yaml')
 
 
 def run_xacro(*args):
@@ -39,7 +41,7 @@ def test_real_keeps_the_robots_ros2_control_block():
 
 
 def test_gazebo_selects_the_fortress_system_plugin():
-    result = run_xacro('hardware:=gazebo')
+    result = run_xacro(*GAZEBO)
     assert result.returncode == 0, result.stderr
     block = ros2_control_block(result.stdout)
     plugins = re.findall(r'<plugin>(.*?)</plugin>', block)
@@ -55,7 +57,7 @@ def test_gazebo_selects_the_fortress_system_plugin():
 def test_gazebo_has_no_driver_sensors():
     # hoverboard_api and head_mcu are state interfaces of PilsbotDriver;
     # GazeboSimSystem does not export them.
-    block = ros2_control_block(run_xacro('hardware:=gazebo').stdout)
+    block = ros2_control_block(run_xacro(*GAZEBO).stdout)
     assert '<sensor' not in block
 
 
