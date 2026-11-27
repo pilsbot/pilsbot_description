@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
-  <xacro:macro name="pilsbot_system" params="name use_fake_hardware:=^|true hoverboard_tty_device head_mcu_tty_device wheel_radius steering_calibration">
+  <xacro:macro name="pilsbot_system" params="name hardware hoverboard_tty_device head_mcu_tty_device wheel_radius steering_calibration">
     <ros2_control name="${name}" type="system">
       <hardware>
-        <xacro:if value="${use_fake_hardware}">
-          <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+        <xacro:if value="${hardware == 'gazebo'}">
+          <plugin>gz_ros2_control/GazeboSimSystem</plugin>
         </xacro:if>
-        <xacro:unless value="${use_fake_hardware}">
+        <xacro:if value="${hardware == 'real'}">
           <plugin>pilsbot_driver/PilsbotDriver</plugin>
           <!-- From the robot profile. steering_calibration lists
                potentiometer:angle pairs. -->
@@ -14,7 +14,7 @@
           <param name="head_mcu_tty_device">${head_mcu_tty_device}</param>
           <param name="wheel_radius">${wheel_radius}</param>
           <param name="steering_calibration">${steering_calibration}</param>
-        </xacro:unless>
+        </xacro:if>
       </hardware>
       <joint name="front_wheel_left_joint">
         <command_interface name="velocity">
@@ -43,6 +43,7 @@
       <joint name="steering_axle_joint">
         <state_interface name="position"/>
       </joint>
+      <xacro:if value="${hardware == 'real'}">
       <sensor name="hoverboard_api">
         <state_interface name="voltage"/>
         <state_interface name="avg_amperage_motor.0"/>
@@ -54,6 +55,7 @@
         <state_interface name="endstop_l"/>
         <state_interface name="endstop_r"/>
       </sensor>
+      </xacro:if>
     </ros2_control>
   </xacro:macro>
 </robot>

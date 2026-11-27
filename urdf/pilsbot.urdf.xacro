@@ -1,7 +1,15 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="pilsbot">
   <xacro:arg name="controller_config" default="acker_diff_controller.yaml"/>
-  <xacro:arg name="use_fake_hardware" default="true"/>
+  <!-- real | gazebo. Required: no usable default (ADR 0009). -->
+  <xacro:arg name="hardware" default=""/>
+  <xacro:property name="hardware" value="$(arg hardware)"/>
+  <xacro:if value="${hardware not in ['real', 'gazebo']}">
+    ${xacro.fatal("pilsbot.urdf.xacro: argument 'hardware' must be 'real' or 'gazebo', got '" + hardware + "'")}
+  </xacro:if>
+  <!-- gazebo only: params file with the robot profile's controller overrides
+       and use_sim_time, written by the simulation launch. -->
+  <xacro:arg name="controller_overrides" default=""/>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->
   <xacro:arg name="robot_profile" default="$(find pilsbot_description)/profiles/pilsbot.yaml"/>
@@ -26,6 +34,11 @@
   <xacro:property name="rear_wheel_length" value="0.08"/>
   <xacro:property name="wheelbase" value="${profile.geometry.wheelbase}"/>
   <xacro:property name="steering_limit" value="${profile.steering.limit}"/>
+  <!-- spike: pivot dynamics, overridable for the experiments -->
+  <xacro:arg name="pivot_damping" default="0.0"/>
+  <xacro:arg name="pivot_friction" default="0.0"/>
+  <xacro:property name="profile_pivot_damping" value="$(arg pivot_damping)"/>
+  <xacro:property name="profile_pivot_friction" value="$(arg pivot_friction)"/>
 
   <xacro:macro name="default_inertia">
     <inertial>
@@ -35,12 +48,25 @@
     </inertial>
   </xacro:macro>
 
+  <!-- spike: wheel_inertia:=solid uses a solid cylinder (axis along the
+       inertial frame's z, which the rpy turns onto the wheel axle); the
+       default keeps the original 1.0 kg m^2 placeholders. -->
+  <xacro:arg name="wheel_inertia" default="placeholder"/>
+  <xacro:macro name="wheel_inertia" params="m r h">
+    <xacro:if value="${'$(arg wheel_inertia)' == 'solid'}">
+      <inertia ixx="${m*(3*r*r+h*h)/12}" ixy="0.0" ixz="0.0" iyy="${m*(3*r*r+h*h)/12}" iyz="0.0" izz="${m*r*r/2}"/>
+    </xacro:if>
+    <xacro:unless value="${'$(arg wheel_inertia)' == 'solid'}">
+      <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+    </xacro:unless>
+  </xacro:macro>
+
   <xacro:macro name="front_wheel" params="suffix axle_offset">
     <link name="front_wheel_${suffix}">
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <mass value="4.0"/>
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+        <xacro:wheel_inertia m="4.0" r="${wheel_radius}" h="${front_wheel_length}"/>
       </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
@@ -85,7 +111,7 @@
       <inertial>
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
         <mass value="1.0"/>
-        <inertia ixx="1.0" ixy="0.0" ixz="0.0" iyy="1.0" iyz="0.0" izz="1.0"/>
+        <xacro:wheel_inertia m="1.0" r="${wheel_radius}" h="${rear_wheel_length}"/>
       </inertial>
       <visual name="">
         <origin xyz="0.0 0.0 0.0" rpy="0.0 1.57 1.57"/>
@@ -258,6 +284,7 @@
     <child link="front_axle"/>
     <axis xyz="0 0 -1"/>
     <limit lower="${-steering_limit}" upper="${steering_limit}" velocity="50.0" effort="1000.0"/>
+    <dynamics damping="${profile_pivot_damping}" friction="${profile_pivot_friction}"/>
     <origin xyz="0 0 -0.05" rpy="0 0 0"/>
   </joint>
 
@@ -297,11 +324,13 @@
 
   <xacro:include filename="$(find pilsbot_description)/urdf/pilsbot.ros2_control.urdf.xacro"/>
   <xacro:pilsbot_system name="PilsbotSystem" 
-                        use_fake_hardware="$(arg use_fake_hardware)" 
+                        hardware="${hardware}" 
                         hoverboard_tty_device="${profile.devices.hoverboard}"
                         head_mcu_tty_device="${profile.devices.head_mcu}"
                         wheel_radius="${wheel_radius}"
                         steering_calibration="${','.join(['%d:%s' % (p[0], p[1]) for p in profile.steering.calibration])}"/>
 
-  <xacro:pilsbot_gazebo prefix="front" parent="front_frame_bar" config="$(arg controller_config)" />
+  <xacro:if value="${hardware == 'gazebo'}">
+    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"/>
+  </xacro:if>
 </robot>
