@@ -14,7 +14,8 @@
        controller geometry and use_sim_time, written by the launch.
        gz_ros2_control loads it after controller_config. -->
   <xacro:arg name="controller_overrides" default=""/>
-  <xacro:if value="${hardware == 'gazebo' and not str('$(arg controller_overrides)')}">
+  <xacro:property name="controller_overrides" value="$(arg controller_overrides)"/>
+  <xacro:if value="${hardware == 'gazebo' and not str(controller_overrides)}">
     ${xacro.fatal("pilsbot.urdf.xacro: argument 'controller_overrides' must name the controller overrides params file with hardware:=gazebo")}
   </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this

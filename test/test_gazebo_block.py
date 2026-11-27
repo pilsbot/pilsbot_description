@@ -14,7 +14,8 @@ from ament_index_python.packages import get_package_share_directory
 import pytest
 import yaml
 
-OVERRIDES = '/tmp/pilsbot_profile_test.yaml'
+# Never read: xacro only copies the path into the plugin's <parameters>.
+OVERRIDES = '/nonexistent/controller_overrides.yaml'
 
 
 def run_xacro(*args):
@@ -68,6 +69,14 @@ def test_gazebo_without_controller_overrides_stops_xacro():
     assert "argument 'controller_overrides'" in result.stderr.splitlines()[0]
 
 
+def test_controller_overrides_path_is_copied_verbatim():
+    # A quote in the path must not break the emptiness check.
+    path = "/nonexistent/it's overrides.yaml"
+    _, robot = urdf_of('hardware:=gazebo', f'controller_overrides:={path}')
+    plugin = robot.find('gazebo/plugin')
+    assert plugin.findall('parameters')[-1].text == path
+
+
 def test_real_does_not_need_controller_overrides(real):
     _, robot = real
     assert robot.find('ros2_control') is not None
@@ -90,8 +99,9 @@ def sensors(robot):
     found = {}
     for g in robot.findall('gazebo'):
         for s in g.findall('sensor'):
-            camera = s.find('camera')
-            image = camera.find('image')
+            assert s.find('camera/image') is not None, \
+                f"sensor {s.get('name')} is not a camera; extend sensors()"
+            image = s.find('camera/image')
             found[s.get('name')] = {
                 'type': s.get('type'),
                 'link': g.get('reference'),
@@ -136,6 +146,18 @@ def test_gazebo_sensors(gazebo):
             'frame_id': 'front_camera_link',
             'size': (848, 480), 'format': 'R8G8B8', 'rate': 30.0},
     }
+
+
+def test_only_the_csi_camera_has_distortion(gazebo):
+    # Measured on the real sensor; the OAK images are rectified.
+    _, robot = gazebo
+    distortion = {s.get('name'): s.find('camera/distortion')
+                  for g in robot.findall('gazebo') for s in g.findall('sensor')}
+    assert {n for n, d in distortion.items() if d is not None} == {'front_camera'}
+    d = distortion['front_camera']
+    assert {k: d.findtext(k) for k in ('k1', 'k2', 'k3', 'p1', 'p2', 'center')} == {
+        'k1': '0.138183', 'k2': '0.637974', 'k3': '0.010038',
+        'p1': '-0.006956', 'p2': '0.0', 'center': '0.5 0.5'}
 
 
 def test_sensor_links_and_frames_exist(gazebo):
