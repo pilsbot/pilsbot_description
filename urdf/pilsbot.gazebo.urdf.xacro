@@ -13,15 +13,18 @@
        camera/stereo/depth          Image 32FC1 640x400   -> /camera/stereo/depth
        camera/stereo/camera_info    CameraInfo            -> /camera/stereo/camera_info
        camera/stereo/depth/points   PointCloudPacked      -> /camera/stereo/points (sim only)
-       front_camera/image_raw       Image rgb8 848x480    -> /image_raw
-       front_camera/camera_info     CameraInfo            -> /camera_info
+       front_camera/image_raw       Image rgb8 1280x720   -> /front_camera/image_raw
+       front_camera/camera_info     CameraInfo            -> /front_camera/camera_info
      The OAK names are the Humble pilsbot_depthai mjpeg_node's. The robot
      publishes the decoded colour image only with enable_raw_decode:=true,
      the mono images only as image_rect/compressed, and depth as 16UC1 in mm
-     (the sim: 32FC1 in m). The CSI camera (jetson_camera) resolved to
-     /image_raw and /camera_info under Foxy; recheck when it moves to Humble.
-     The gz topic carries a front_camera/ prefix because gz derives the
-     camera_info topic from the image topic's parent. -->
+     (the sim: 32FC1 in m). The CSI names are pilsbot_bringup's
+     camera.launch.py's (jetson_camera). gz derives the camera_info topic
+     from the image topic's parent.
+
+     No sensor has a <distortion>: Fortress's ogre2 does not render lens
+     distortion, so the images are pinhole and camera_info says D = 0 to
+     match (pilsbot/pilsbot_simulation#4). -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
   <!-- Wheel-ground friction. The spike (pilsbot/pilsbot_simulation#1)
@@ -35,9 +38,9 @@
   </xacro:macro>
 
   <!-- A camera sensor on a link (x forward). The image header names
-       frame_id; gz publishes camera_info next to the image topic.
-       distortion: "k1 k2 k3 p1 p2" (centre 0.5 0.5), or empty for none. -->
-  <xacro:macro name="pilsbot_camera" params="name link frame_id topic type:=camera hfov width height format rate near:=0.2 far:=20.0 distortion:=''">
+       frame_id, an optical frame of that link; gz publishes camera_info
+       next to the image topic. -->
+  <xacro:macro name="pilsbot_camera" params="name link frame_id topic type:=camera hfov width height format rate near:=0.2 far:=20.0">
     <gazebo reference="${link}">
       <sensor name="${name}" type="${type}">
         <always_on>true</always_on>
@@ -55,17 +58,6 @@
             <near>${near}</near>
             <far>${far}</far>
           </clip>
-          <xacro:if value="${distortion != ''}">
-            <xacro:property name="coefficients" value="${distortion.split()}"/>
-            <distortion>
-              <k1>${coefficients[0]}</k1>
-              <k2>${coefficients[1]}</k2>
-              <k3>${coefficients[2]}</k3>
-              <p1>${coefficients[3]}</p1>
-              <p2>${coefficients[4]}</p2>
-              <center>0.5 0.5</center>
-            </distortion>
-          </xacro:if>
         </camera>
       </sensor>
     </gazebo>
@@ -73,8 +65,9 @@
 
   <!-- config: file name in pilsbot_control/config. overrides: params file
        with the robot profile's controller geometry and use_sim_time, written
-       by the launch. gz_ros2_control loads both, in this order. -->
-  <xacro:macro name="pilsbot_gazebo" params="config overrides">
+       by the launch. gz_ros2_control loads both, in this order.
+       cameras: false leaves out the sensors and nothing else. -->
+  <xacro:macro name="pilsbot_gazebo" params="config overrides cameras">
     <gazebo>
       <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
         <parameters>$(find pilsbot_control)/config/${config}</parameters>
@@ -87,6 +80,7 @@
     <xacro:pilsbot_wheel_surface link="rear_wheel_left"/>
     <xacro:pilsbot_wheel_surface link="rear_wheel_right"/>
 
+    <xacro:if value="${cameras}">
     <!-- OAK-D Lite at the mjpeg_node defaults: colour 1080p ISP-scaled 2/3
          at 30 fps (HFOV 69 deg), mono 400p at 15 fps (HFOV 73 deg), stereo
          depth aligned to the left mono camera. -->
@@ -103,12 +97,19 @@
                           frame_id="oak_left_camera_optical_frame" topic="camera/stereo/depth"
                           hfov="1.27" width="640" height="400" format="R_FLOAT32" rate="15"/>
 
-    <!-- CSI camera on the front frame bar; distortion measured on the real
-         sensor. -->
+    <!-- CSI camera on the front frame bar at jetson_camera_launch.py's output
+         (1280x720, 30 fps). Field of view from the robot's calibration,
+         jetson_camera camera_info/camera.yaml (1920x1080, fx 2570.36013),
+         scaled to the output width as jetson_camera does: fx 1713.573.
+         Gazebo makes fy = fx and centres the principal point (the robot's:
+         fy 1713.481, cx 606.6, cy 391.2). -->
+    <xacro:property name="csi_width" value="1280"/>
+    <xacro:property name="csi_fx" value="${2570.36013 * csi_width / 1920}"/>
     <xacro:pilsbot_camera name="front_camera" link="front_camera_link"
-                          frame_id="front_camera_link" topic="front_camera/image_raw"
-                          hfov="1.16937" width="848" height="480" format="R8G8B8" rate="30"
-                          near="0.05" far="50.0"
-                          distortion="0.138183 0.637974 0.010038 -0.006956 0.0"/>
+                          frame_id="front_camera_optical_frame" topic="front_camera/image_raw"
+                          hfov="${2 * atan(csi_width / 2 / csi_fx)}"
+                          width="${csi_width}" height="720" format="R8G8B8" rate="30"
+                          near="0.05" far="50.0"/>
+    </xacro:if>
   </xacro:macro>
 </robot>

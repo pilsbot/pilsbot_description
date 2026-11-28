@@ -18,6 +18,16 @@
   <xacro:if value="${hardware == 'gazebo' and not str(controller_overrides)}">
     ${xacro.fatal("pilsbot.urdf.xacro: argument 'controller_overrides' must name the controller overrides params file with hardware:=gazebo")}
   </xacro:if>
+  <!-- gazebo only: false leaves the camera sensors out of the <gazebo> block
+       (nothing renders, so control tests run faster). The real URDF is the
+       same either way. Only true or false, case-sensitive (ADR 0009); xacro
+       also takes True/False, strips spaces, and an empty value means the
+       default. -->
+  <xacro:arg name="cameras" default="true"/>
+  <xacro:property name="cameras" value="$(arg cameras)"/>
+  <xacro:if value="${str(cameras) not in ['True', 'False']}">
+    ${xacro.fatal("pilsbot.urdf.xacro: argument 'cameras' must be 'true' or 'false', got '" + str(cameras) + "'")}
+  </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->
   <xacro:arg name="robot_profile" default="$(find pilsbot_description)/profiles/pilsbot.yaml"/>
@@ -315,6 +325,13 @@
     <child link="front_camera_link"/>
     <origin xyz="0.01 0.0 0.0" rpy="0.0 0.0 0.0"/>
   </joint>
+  <!-- The CSI images' frame (REP 103 optical: z forward, x right, y down). -->
+  <link name="front_camera_optical_frame"/>
+  <joint name="front_camera_optical_joint" type="fixed">
+    <parent link="front_camera_link"/>
+    <child link="front_camera_optical_frame"/>
+    <origin xyz="0.0 0.0 0.0" rpy="${-pi/2} 0.0 ${-pi/2}"/>
+  </joint>
 
   <xacro:front_wheel suffix="left" axle_offset="${profile.geometry.front_track / 2}"/>
   <xacro:front_wheel suffix="right" axle_offset="${-profile.geometry.front_track / 2}"/>
@@ -339,6 +356,7 @@
                         steering_calibration="${','.join(['%d:%s' % (p[0], p[1]) for p in profile.steering.calibration])}"/>
 
   <xacro:if value="${hardware == 'gazebo'}">
-    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"/>
+    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"
+                          cameras="${cameras}"/>
   </xacro:if>
 </robot>

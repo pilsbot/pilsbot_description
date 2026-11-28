@@ -5,6 +5,7 @@ the sensors; `hardware:=real` emits no <gazebo> element at all. Values the
 Fortress spike established are in pilsbot/pilsbot_simulation#1.
 """
 
+import math
 import pathlib
 import shutil
 import subprocess
@@ -117,7 +118,8 @@ def sensors(robot):
 def test_gazebo_sensors(gazebo):
     # OAK topics and frames of the Humble pilsbot_depthai mjpeg_node (its
     # defaults: colour 1080p ISP-scaled 2/3 at 30 fps, mono 400p at 15 fps,
-    # depth aligned to the left mono camera); the CSI camera as before.
+    # depth aligned to the left mono camera); the CSI camera at the robot's
+    # jetson_camera output size and rate, in its optical frame.
     _, robot = gazebo
     assert sensors(robot) == {
         'oak_rgb': {
@@ -143,21 +145,75 @@ def test_gazebo_sensors(gazebo):
         'front_camera': {
             'type': 'camera', 'link': 'front_camera_link',
             'topic': 'front_camera/image_raw',
-            'frame_id': 'front_camera_link',
-            'size': (848, 480), 'format': 'R8G8B8', 'rate': 30.0},
+            'frame_id': 'front_camera_optical_frame',
+            'size': (1280, 720), 'format': 'R8G8B8', 'rate': 30.0},
     }
 
 
-def test_only_the_csi_camera_has_distortion(gazebo):
-    # Measured on the real sensor; the OAK images are rectified.
+def test_no_sensor_has_distortion(gazebo):
+    # Fortress's ogre2 does not render lens distortion, so a <distortion>
+    # would only make camera_info claim one the pinhole images don't have.
+    # Without it the sim's camera_info says D = 0 (pilsbot/pilsbot_simulation#4).
     _, robot = gazebo
-    distortion = {s.get('name'): s.find('camera/distortion')
-                  for g in robot.findall('gazebo') for s in g.findall('sensor')}
-    assert {n for n, d in distortion.items() if d is not None} == {'front_camera'}
-    d = distortion['front_camera']
-    assert {k: d.findtext(k) for k in ('k1', 'k2', 'k3', 'p1', 'p2', 'center')} == {
-        'k1': '0.138183', 'k2': '0.637974', 'k3': '0.010038',
-        'p1': '-0.006956', 'p2': '0.0', 'center': '0.5 0.5'}
+    assert robot.findall('.//distortion') == []
+
+
+# The robot's CSI calibration, jetson_camera camera_info/camera.yaml (the
+# Pilsbot's own calibration, jetson_camera a59244b): 1920x1080. jetson_camera
+# scales K to its output size, 1280x720 in jetson_camera_launch.py.
+CSI_CALIBRATION_SIZE = (1920, 1080)
+CSI_CALIBRATION_K = {'fx': 2570.36013, 'fy': 2570.22187, 'cx': 909.89676, 'cy': 586.80859}
+CSI_OUTPUT_SIZE = (1280, 720)
+
+
+def test_csi_intrinsics_match_the_robots_calibration(gazebo):
+    _, robot = gazebo
+    sensor = [s for g in robot.findall('gazebo') for s in g.findall('sensor')
+              if s.get('name') == 'front_camera'][0]
+    width = int(sensor.findtext('camera/image/width'))
+    height = int(sensor.findtext('camera/image/height'))
+    assert (width, height) == CSI_OUTPUT_SIZE
+    # Gazebo derives camera_info from the horizontal FOV: fx = fy, centred
+    # principal point.
+    hfov = float(sensor.findtext('camera/horizontal_fov'))
+    fx = width / 2 / math.tan(hfov / 2)
+    scale_x = width / CSI_CALIBRATION_SIZE[0]
+    scale_y = height / CSI_CALIBRATION_SIZE[1]
+    assert fx == pytest.approx(CSI_CALIBRATION_K['fx'] * scale_x, abs=0.01)
+    assert fx == pytest.approx(CSI_CALIBRATION_K['fy'] * scale_y, abs=0.5)
+    assert sensor.find('camera/lens') is None
+
+
+def rotation(rpy):
+    """URDF rpy (fixed axes x, y, z) as a 3x3 rotation matrix, rows."""
+    r, p, y = rpy
+    cr, sr, cp, sp, cy, sy = (math.cos(r), math.sin(r), math.cos(p), math.sin(p),
+                              math.cos(y), math.sin(y))
+    return [[cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr],
+            [sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr],
+            [-sp, cp * sr, cp * cr]]
+
+
+def test_front_camera_optical_frame(gazebo, real):
+    # REP 103 optical frame on the CSI camera: z forward, x right, y down,
+    # in both URDFs (the robot stamps its images with it as well).
+    for _, robot in (gazebo, real):
+        assert 'front_camera_optical_frame' in {lk.get('name') for lk in robot.findall('link')}
+        joints = [j for j in robot.findall('joint')
+                  if j.find('child').get('link') == 'front_camera_optical_frame']
+        assert len(joints) == 1
+        joint = joints[0]
+        assert joint.get('type') == 'fixed'
+        assert joint.find('parent').get('link') == 'front_camera_link'
+        origin = joint.find('origin')
+        assert [float(v) for v in origin.get('xyz').split()] == [0.0, 0.0, 0.0]
+        matrix = rotation([float(v) for v in origin.get('rpy').split()])
+        columns = [[row[i] for row in matrix] for i in range(3)]
+        # The optical axes, written in front_camera_link (x forward, y left,
+        # z up).
+        assert columns[0] == pytest.approx([0.0, -1.0, 0.0], abs=1e-9)  # x: right
+        assert columns[1] == pytest.approx([0.0, 0.0, -1.0], abs=1e-9)  # y: down
+        assert columns[2] == pytest.approx([1.0, 0.0, 0.0], abs=1e-9)   # z: forward
 
 
 def test_sensor_links_and_frames_exist(gazebo):
@@ -168,10 +224,11 @@ def test_sensor_links_and_frames_exist(gazebo):
         assert sensor['frame_id'] in links
 
 
-def test_front_camera_link_is_in_both_urdfs(gazebo, real):
-    # The CSI camera is on the robot, so its frame stays in the real URDF.
+def test_front_camera_frames_are_in_both_urdfs(gazebo, real):
+    # The CSI camera is on the robot, so its frames stay in the real URDF.
     for _, robot in (gazebo, real):
-        assert 'front_camera_link' in {link.get('name') for link in robot.findall('link')}
+        links = {link.get('name') for link in robot.findall('link')}
+        assert {'front_camera_link', 'front_camera_optical_frame'} <= links
 
 
 def test_gazebo_wheel_friction(gazebo):
