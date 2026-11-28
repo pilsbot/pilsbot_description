@@ -74,7 +74,7 @@
   <!-- config: file name in pilsbot_control/config. overrides: params file
        with the robot profile's controller geometry and use_sim_time, written
        by the launch. gz_ros2_control loads both, in this order. -->
-  <xacro:macro name="pilsbot_gazebo" params="config overrides">
+  <xacro:macro name="pilsbot_gazebo" params="config overrides cameras:=true">
     <gazebo>
       <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
         <parameters>$(find pilsbot_control)/config/${config}</parameters>
@@ -87,6 +87,7 @@
     <xacro:pilsbot_wheel_surface link="rear_wheel_left"/>
     <xacro:pilsbot_wheel_surface link="rear_wheel_right"/>
 
+    <xacro:if value="${cameras in [True, 'true', 'True', 1, '1']}">
     <!-- OAK-D Lite at the mjpeg_node defaults: colour 1080p ISP-scaled 2/3
          at 30 fps (HFOV 69 deg), mono 400p at 15 fps (HFOV 73 deg), stereo
          depth aligned to the left mono camera. -->
@@ -110,5 +111,6 @@
                           hfov="1.16937" width="848" height="480" format="R8G8B8" rate="30"
                           near="0.05" far="50.0"
                           distortion="0.138183 0.637974 0.010038 -0.006956 0.0"/>
+    </xacro:if>
   </xacro:macro>
 </robot>

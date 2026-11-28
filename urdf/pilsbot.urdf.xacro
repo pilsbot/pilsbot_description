@@ -20,6 +20,11 @@
   </xacro:if>
   <!-- Robot profile: geometry, steering calibration and device ports of this
        physical Pilsbot. Launch files pass the selected profile's path. -->
+  <!-- gazebo only: false leaves the camera sensors out (nothing renders).
+       SPIKE (pilsbot_simulation#4): default from $PILSBOT_SIM_CAMERAS so the
+       spike needs no launch passthrough; the ticket passes it as a launch
+       argument through pilsbot_bringup and pilsbot_driver's launch. -->
+  <xacro:arg name="cameras" default="$(optenv PILSBOT_SIM_CAMERAS true)"/>
   <xacro:arg name="robot_profile" default="$(find pilsbot_description)/profiles/pilsbot.yaml"/>
   <xacro:property name="profile" value="${xacro.load_yaml('$(arg robot_profile)')}"/>
 
@@ -339,6 +344,7 @@
                         steering_calibration="${','.join(['%d:%s' % (p[0], p[1]) for p in profile.steering.calibration])}"/>
 
   <xacro:if value="${hardware == 'gazebo'}">
-    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"/>
+    <xacro:pilsbot_gazebo config="$(arg controller_config)" overrides="$(arg controller_overrides)"
+                          cameras="$(arg cameras)"/>
   </xacro:if>
 </robot>
