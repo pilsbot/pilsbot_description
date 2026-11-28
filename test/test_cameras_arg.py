@@ -30,13 +30,17 @@ def urdf_of(*args):
     return result.stdout
 
 
+def canonical(robot):
+    return ET.canonicalize(ET.tostring(robot, encoding='unicode'), strip_text=True)
+
+
 def without_sensors(text):
     """The URDF with every <gazebo> element that holds a <sensor> removed."""
     robot = ET.fromstring(text)
     for gazebo in robot.findall('gazebo'):
         if gazebo.find('sensor') is not None:
             robot.remove(gazebo)
-    return ET.tostring(robot, encoding='unicode')
+    return canonical(robot)
 
 
 def test_cameras_false_has_no_sensor():
@@ -49,8 +53,7 @@ def test_cameras_false_keeps_everything_else():
     # The gz_ros2_control plugin, the wheel friction, links and joints stay.
     with_cameras = urdf_of(*GAZEBO, 'cameras:=true')
     no_cameras = urdf_of(*GAZEBO, 'cameras:=false')
-    assert without_sensors(with_cameras) == \
-        ET.tostring(ET.fromstring(no_cameras), encoding='unicode')
+    assert without_sensors(with_cameras) == canonical(ET.fromstring(no_cameras))
     plugins = [p.get('filename') for p in ET.fromstring(no_cameras).findall('gazebo/plugin')]
     assert plugins == ['gz_ros2_control-system']
 
