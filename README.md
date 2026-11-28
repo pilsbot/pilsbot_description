@@ -12,7 +12,7 @@ The `real` URDF has no `<gazebo>` element. Gazebo Classic is not supported.
 
 An empty or other value stops xacro with an error naming the argument and the allowed values.
 
-`cameras:=true|false` (default `true`) matters only with `hardware:=gazebo`: `false` leaves the five camera sensors out of the `<gazebo>` block, so nothing is rendered; the `gz_ros2_control` plugin and everything else stay. The `real` URDF is the same either way. Other values stop xacro.
+`cameras:=true|false` (default `true`) matters only with `hardware:=gazebo`: `false` leaves the five camera sensors out of the `<gazebo>` block, so nothing is rendered; the `gz_ros2_control` plugin and everything else stay. The `real` URDF is the same either way. The check is case-sensitive, but xacro turns `True` and `False` into the same booleans, strips spaces around the value, and treats an empty value (`cameras:=`) as no value, so these mean `true`, `false` and the default. Other values (`TRUE`, `1`, `yes`, …) stop xacro.
 
 The CSI camera's images are in `front_camera_optical_frame` (REP 103 optical frame under `front_camera_link`: z forward, x right, y down), on the robot and in the sim. The sim's CSI sensor is 1280×720 at 30 fps with the field of view of the robot's calibration (`jetson_camera` `camera_info/camera.yaml`, scaled to 1280×720) and no distortion: Fortress's ogre2 does not render lens distortion, so its `camera_info` says D = 0 to match its pinhole images.
 
