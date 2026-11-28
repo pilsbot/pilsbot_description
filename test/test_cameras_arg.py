@@ -35,7 +35,7 @@ def canonical(robot):
 
 
 def without_sensors(text):
-    """The URDF with every <gazebo> element that holds a <sensor> removed."""
+    """Return the URDF without the <gazebo> elements that hold a <sensor>."""
     robot = ET.fromstring(text)
     for gazebo in robot.findall('gazebo'):
         if gazebo.find('sensor') is not None:
